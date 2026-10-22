@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#6c5ce7">
+<meta name="description" content="ذهن‌باز — دو بازی، یک ذهن باز. حافظه‌ات رو بسنج و با هوش مصنوعی رقابت کن!">
+<title>ذهن‌باز</title>
+<style>
+:root{
+  --bg:#0f0e17; --card:#1e1b2e; --surface:#252141;
+  --primary:#6c5ce7; --primary-light:#a29bfe;
+  --accent:#feca57; --success:#00b894; --danger:#ff6b6b;
+  --text:#fffffe; --muted:#a7a9be;
+  --back1:#6c5ce7; --back2:#a29bfe;
+  --shadow:0 20px 60px rgba(0,0,0,.5);
+  --x-color:#ff6b6b; --o-color:#4ecdc4;
+}
+[data-theme="light"]{
+  --bg:#eef0f7; --card:#ffffff; --surface:#f4f5fa;
+  --text:#1a1a2e; --muted:#666;
+  --shadow:0 20px 60px rgba(108,92,231,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Segoe UI',Tahoma,system-ui,sans-serif;
+  background:var(--bg); color:var(--text);
+  height:100vh; height:100dvh;
+  overflow:hidden;
+  transition:background .3s,color .3s;
+}
+body::before{
+  content:''; position:fixed; inset:0; z-index:-1;
+  background:radial-gradient(circle at 20% 20%, rgba(108,92,231,.25), transparent 50%),
+             radial-gradient(circle at 80% 80%, rgba(254,202,87,.15), transparent 50%),
+             radial-gradient(circle at 50% 100%, rgba(0,184,148,.1), transparent 50%);
+}
+
+/* ===== Screens ===== */
+.screen{
+  position:absolute; inset:0;
+  display:none; flex-direction:column;
+  padding:max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+}
+.screen.active{display:flex; animation:screenIn .35s ease}
+@keyframes screenIn{
+  from{opacity:0; transform:translateX(-20px)}
+  to{opacity:1; transform:translateX(0)}
+}
+
+/* ===== Home Screen ===== */
+#homeScreen{
+  justify-content:center; align-items:center;
+  text-align:center;
+}
+.home-logo{
+  width:140px; height:140px; border-radius:36px;
+  /* استفاده از عکس به صورت Base64 */
+  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=') center/cover no-repeat;
+  box-shadow:0 20px 50px rgba(108,92,231,.6);
+  margin-bottom:24px;
+  animation:logoFloat 3s ease-in-out infinite;
+  position:relative;
+  border: 2px solid rgba(255,255,255,.1);
+  /* یک گرادیانت به عنوان پس‌زمینه موقت تا وقتی عکس لود شود */
+  background-color: var(--primary); 
+}
+@keyframes logoFloat{
+  0%,100%{transform:translateY(0) rotate(-2deg)}
+  50%{transform:translateY(-10px) rotate(2deg)}
+}
+.home-logo::after{
+  content:''; position:absolute; inset:-12px;
+  border-radius:48px; border:2px solid rgba(108,92,231,.4);
+  animation:logoPulse 2s ease-in-out infinite;
+}
+@keyframes logoPulse{
+  0%,100%{transform:scale(1); opacity:.5}
+  50%{transform:scale(1.08); opacity:.1}
+}
+.home-title{
+  font-size:2.6rem; font-weight:900; letter-spacing:-1.5px;
+  margin-bottom:6px;
+  background:linear-gradient(135deg, #fff, var(--accent));
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  filter: drop-shadow(0 0 20px rgba(254,202,87,.3));
+}
+.home-subtitle{
+  font-size:.95rem; color:var(--muted); margin-bottom:40px;
+}
+.game-select{
+  width:100%; max-width:380px;
+  display:flex; flex-direction:column; gap:14px;
+}
+.game-card{
+  background:var(--card);
+  border-radius:22px; padding:20px;
+  display:flex; align-items:center; gap:16px;
+  cursor:pointer; border:2px solid transparent;
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  text-align:right;
+  position:relative; overflow:hidden;
+}
+.game-card::before{
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg, transparent, rgba(108,92,231,.1));
+  opacity:0; transition:opacity .3s;
+}
+.game-card:hover::before{opacity:1}
+.game-card:active{transform:scale(.97)}
+.game-card.memory{border-color:rgba(108,92,231,.3)}
+.game-card.dots{border-color:rgba(78,205,196,.3)}
+.game-icon{
+  width:60px; height:60px; border-radius:18px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 20px rgba(0,0,0,.3);
+}
+.game-card.memory .game-icon{
+  background:linear-gradient(135deg, var(--primary), var(--primary-light));
+}
+.game-card.dots .game-icon{
+  background:linear-gradient(135deg, #4ecdc4, #44a08d);
+}
+.game-icon svg{width:32px; height:32px; color:#fff}
+.game-info{flex:1}
+.game-name{font-size:1.15rem; font-weight:800; margin-bottom:2px}
+.game-desc{font-size:.78rem; color:var(--muted); line-height:1.4}
+.game-arrow{
+  width:32px; height:32px; border-radius:50%;
+  background:var(--surface); display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.game-arrow svg{width:16px; height:16px; color:var(--muted)}
+
+.home-footer{
+  margin-top:40px; font-size:.75rem; color:var(--muted);
+  display:flex; align-items:center; gap:6px;
+}
+.home-footer svg{width:14px; height:14px}
+
+/* ===== Game Header ===== */
+.game-header{
+  display:flex; align-items:center; gap:10px;
+  margin-bottom:12px; flex-shrink:0;
+}
+.back-btn{
+  width:40px; height:40px; border-radius:12px; border:none;
+  background:var(--surface); color:var(--text);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:transform .15s;
+  flex-shrink:0;
+}
+.back-btn:active{transform:scale(.9)}
+.back-btn svg{width:18px; height:18px}
+.game-title-header{
+  font-size:1.1rem; font-weight:800; flex:1;
+}
+.game-title-header span{color:var(--primary)}
+
+/* ===== Difficulty Select ===== */
+.diff-select{
+  flex:1; display:flex; flex-direction:column; justify-content:center;
+  gap:14px; max-width:400px; width:100%; margin:0 auto;
+}
+.diff-title{
+  text-align:center; font-size:1.3rem; font-weight:800;
+  margin-bottom:8px;
+}
+.diff-subtitle{
+  text-align:center; font-size:.85rem; color:var(--muted);
+  margin-bottom:20px;
+}
+.diff-card{
+  background:var(--card); border-radius:20px;
+  padding:18px 20px; display:flex; align-items:center; gap:16px;
+  cursor:pointer; border:2px solid transparent;
+  transition:all .25s; box-shadow:0 6px 20px rgba(0,0,0,.15);
+  position:relative; overflow:hidden;
+}
+.diff-card:active{transform:scale(.97)}
+.diff-card.easy{border-color:rgba(0,184,148,.3)}
+.diff-card.medium{border-color:rgba(254,202,87,.3)}
+.diff-card.hard{border-color:rgba(255,107,107,.3)}
+.diff-emoji{
+  width:52px; height:52px; border-radius:15px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.6rem;
+}
+.diff-card.easy .diff-emoji{background:linear-gradient(135deg, #00b894, #55efc4)}
+.diff-card.medium .diff-emoji{background:linear-gradient(135deg, #feca57, #ff9f43)}
+.diff-card.hard .diff-emoji{background:linear-gradient(135deg, #ff6b6b, #ee5a6f)}
+.diff-info{flex:1; text-align:right}
+.diff-name{font-size:1.05rem; font-weight:800; margin-bottom:2px}
+.diff-desc{font-size:.75rem; color:var(--muted)}
+
+/* ===== Memory Board ===== */
+.memory-layout{
+  flex:1; display:flex; flex-direction:column;
+  max-width:480px; width:100%; margin:0 auto;
+  min-height:0;
+}
+.stats{display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:10px; flex-shrink:0}
+.stat{
+  background:var(--surface); border-radius:11px;
+  padding:8px 4px; text-align:center; position:relative; overflow:hidden;
+}
+.stat-val{
+  font-size:1.1rem; font-weight:800;
+  font-variant-numeric:tabular-nums; color:var(--accent);
+  line-height:1.1;
+}
+.stat-val.primary{color:var(--primary)}
+.stat-val.success{color:var(--success)}
+.stat-lbl{font-size:.62rem; color:var(--muted); margin-top:2px}
+.combo-flash{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; font-weight:900; color:var(--accent);
+  background:rgba(254,202,87,.15);
+  opacity:0; pointer-events:none;
+  animation:comboFlash 1s ease;
+}
+@keyframes comboFlash{
+  0%{opacity:0; transform:scale(.5)}
+  30%{opacity:1; transform:scale(1.3)}
+  100%{opacity:0; transform:scale(1)}
+}
+
+.board-wrap{position:relative; margin-bottom:10px; flex-shrink:0}
+.board{
+  display:grid; gap:clamp(6px,1.5vw,9px);
+  perspective:1200px;
+}
+
+/* ===== Tiles ===== */
+.tile{
+  aspect-ratio:1; position:relative; cursor:pointer;
+  transform-style:preserve-3d;
+  transform:rotateY(0deg);
+  will-change:transform;
+  transition:transform .4s cubic-bezier(.34,.14,.36,1);
+}
+.tile.flipped{
+  transform:rotateY(180deg);
+}
+.tile.matched{
+  transform:rotateY(180deg);
+  cursor:default;
+  transition:none;
+}
+.tile.matched .face-front{opacity:.9}
+
+/* Closing animation — کاملاً ایزوله از ترنزیشن */
+.tile.closing{
+  animation:flipClose .45s cubic-bezier(.4,0,.2,1) forwards;
+  pointer-events:none;
+  transition:none;
+}
+@keyframes flipClose{
+  0%   { transform:rotateY(180deg) scale(1); }
+  50%  { transform:rotateY(90deg) scale(.96); }
+  100% { transform:rotateY(0deg) scale(1); }
+}
+
+/* Shake — حفظ حالت ۱۸۰ درجه */
+.tile.shake{
+  animation:shake .35s ease;
+  transition:none;
+}
+@keyframes shake{
+  0%,100%{transform:rotateY(180deg) translateX(0);}
+  25%    {transform:rotateY(180deg) translateX(-6px);}
+  75%    {transform:rotateY(180deg) translateX(6px);}
+}
+
+.face{
+  position:absolute; inset:0; backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  border-radius:clamp(8px,2vw,14px);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.face-back{
+  background:linear-gradient(135deg, var(--back1), var(--back2));
+  box-shadow:0 4px 12px rgba(108,92,231,.35),
+             inset 0 2px 0 rgba(255,255,255,.2),
+             inset 0 -3px 0 rgba(0,0,0,.1);
+  border:1.5px solid rgba(255,255,255,.12);
+}
+.face-back::before{
+  content:''; position:absolute; inset:0;
+  background:
+    radial-gradient(circle at 25% 25%, rgba(255,255,255,.25), transparent 40%),
+    radial-gradient(circle at 75% 75%, rgba(0,0,0,.15), transparent 40%);
+}
+.face-back svg{
+  width:55%; height:55%;
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.2));
+  opacity:.9;
+}
+.face-front{
+  background:var(--bg); transform:rotateY(180deg);
+  border:2px solid var(--primary);
+  box-shadow:inset 0 0 20px rgba(108,92,231,.15);
+}
+.face-front svg{width:65%; height:65%}
+.tile.matched .face-front{
+  border-color:var(--success);
+  box-shadow:inset 0 0 25px rgba(0,184,148,.35),
+             0 0 20px rgba(0,184,148,.4);
+}
+.tile.matched{
+  animation:matchPop .6s cubic-bezier(.68,-.55,.27,1.55);
+}
+@keyframes matchPop{
+  0%{transform:rotateY(180deg) scale(1)}
+  40%{transform:rotateY(180deg) scale(1.12) rotate(-3deg)}
+  70%{transform:rotateY(180deg) scale(.95) rotate(2deg)}
+  100%{transform:rotateY(180deg) scale(1)}
+}
+.tile.hint{
+  animation:hintPulse 1.2s ease;
+}
+@keyframes hintPulse{
+  0%,100%{box-shadow:0 0 0 0 var(--accent)}
+  50%{box-shadow:0 0 0 6px rgba(254,202,87,0), 0 0 20px var(--accent)}
+}
+
+.sparkle{
+  position:absolute; pointer-events:none; z-index:50;
+  font-size:1.4rem; font-weight:800;
+  color:var(--accent);
+  text-shadow:0 0 10px var(--accent);
+  animation:sparkleFly .9s ease-out forwards;
+}
+@keyframes sparkleFly{
+  0%{transform:translate(-50%,-50%) scale(0) rotate(0deg); opacity:1}
+  100%{transform:translate(var(--tx,-50%),var(--ty,-100%)) scale(1.3) rotate(var(--rot,180deg)); opacity:0}
+}
+
+.combo-badge{
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%) scale(0);
+  font-size:2rem; font-weight:900;
+  color:var(--accent);
+  text-shadow:0 0 20px var(--accent), 0 0 40px var(--primary);
+  pointer-events:none; z-index:100;
+  white-space:nowrap;
+}
+.combo-badge.show{animation:comboBoom 1.2s cubic-bezier(.68,-.55,.27,1.55) forwards}
+@keyframes comboBoom{
+  0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg); opacity:0}
+  40%{transform:translate(-50%,-50%) scale(1.4) rotate(5deg); opacity:1}
+  70%{transform:translate(-50%,-50%) scale(1.1) rotate(-3deg); opacity:1}
+  100%{transform:translate(-50%,-100%) scale(1) rotate(0deg); opacity:0}
+}
+
+/* ===== Actions Bar ===== */
+.actions{
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:8px; flex-shrink:0;
+}
+.btn{
+  padding:12px 8px; border:none; border-radius:13px;
+  font-family:inherit; font-size:.82rem; font-weight:700;
+  cursor:pointer; transition:transform .15s, background .2s;
+  display:flex; align-items:center; justify-content:center; gap:5px;
+}
+.btn svg{width:16px; height:16px}
+.btn:active{transform:scale(.95)}
+.btn-primary{
+  background:linear-gradient(135deg, var(--primary), var(--primary-light));
+  color:#fff; box-shadow:0 6px 20px rgba(108,92,231,.4);
+}
+.btn-secondary{
+  background:var(--surface); color:var(--text);
+}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+.hint-count{
+  background:var(--accent); color:#000;
+  font-size:.65rem; font-weight:800;
+  padding:1px 6px; border-radius:8px;
+}
+
+/* ===== Dots Game ===== */
+.dots-layout{
+  flex:1; display:flex; flex-direction:column;
+  max-width:480px; width:100%; margin:0 auto;
+  min-height:0;
+}
+.dots-score{
+  display:grid; grid-template-columns:1fr 1fr 1fr;
+  gap:8px; margin-bottom:12px; flex-shrink:0;
+}
+.score-card{
+  background:var(--surface); border-radius:13px;
+  padding:10px; text-align:center;
+  border:2px solid transparent;
+  transition:all .3s;
+}
+.score-card.active{
+  border-color:currentColor;
+  box-shadow:0 0 20px currentColor;
+}
+.score-card.x{color:var(--x-color)}
+.score-card.o{color:var(--o-color)}
+.score-card.vs{color:var(--muted)}
+.score-icon{
+  width:26px; height:26px; margin:0 auto 4px;
+  display:flex; align-items:center; justify-content:center;
+}
+.score-name{font-size:.68rem; color:var(--muted); margin-top:2px}
+.score-num{font-size:1.3rem; font-weight:800; line-height:1}
+
+.dots-board-wrap{
+  flex:1; display:flex; align-items:center; justify-content:center;
+  padding:8px 0; min-height:0;
+}
+.dots-board{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:clamp(6px,2vw,10px);
+  width:100%; max-width:min(360px, 90vw);
+  aspect-ratio:1;
+  perspective:1000px;
+}
+.dots-cell{
+  background:var(--card);
+  border:2px solid var(--surface);
+  border-radius:clamp(10px,2.5vw,18px);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  transition:all .25s cubic-bezier(.4,0,.2,1);
+  position:relative;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+}
+.dots-cell:active{transform:scale(.95)}
+.dots-cell.win-line{
+  background:rgba(254,202,87,.15);
+  border-color:var(--accent);
+  animation:winPulse .8s ease infinite;
+}
+@keyframes winPulse{
+  0%,100%{box-shadow:0 0 20px rgba(254,202,87,.4)}
+  50%{box-shadow:0 0 35px rgba(254,202,87,.8)}
+}
+.dots-cell svg{
+  width:65%; height:65%;
+}
+.dots-cell .x-mark{color:var(--x-color); animation:markIn .35s cubic-bezier(.68,-.55,.27,1.55)}
+.dots-cell .o-mark{color:var(--o-color); animation:markIn .35s cubic-bezier(.68,-.55,.27,1.55)}
+@keyframes markIn{
+  0%{transform:scale(0) rotate(-90deg); opacity:0}
+  100%{transform:scale(1) rotate(0); opacity:1}
+}
+.dots-cell:not(.filled):hover{
+  border-color:var(--primary);
+  background:var(--surface);
+}
+
+.dots-status{
+  text-align:center; padding:10px;
+  font-size:.9rem; font-weight:700;
+  min-height:42px; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.dots-status.thinking{color:var(--accent)}
+.dots-status.win{color:var(--success)}
+.dots-status.lose{color:var(--danger)}
+.dots-status.draw{color:var(--muted)}
+.thinking-dots::after{
+  content:''; display:inline-block; width:12px; text-align:left;
+  animation:thinkingDots 1.4s steps(4) infinite;
+}
+@keyframes thinkingDots{
+  0%{content:''}
+  25%{content:'.'}
+  50%{content:'..'}
+  75%{content:'...'}
+}
+
+/* ===== Win Overlay ===== */
+.win{
+  position:fixed; inset:0; background:rgba(0,0,0,.75);
+  display:none; align-items:center; justify-content:center;
+  padding:20px; z-index:200; backdrop-filter:blur(8px);
+}
+.win.show{display:flex; animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.win-card{
+  background:var(--card); border-radius:24px; padding:28px 22px;
+  text-align:center; max-width:340px; width:100%;
+  animation:slideUp .5s cubic-bezier(.68,-.55,.27,1.55);
+  position:relative; overflow:hidden;
+}
+@keyframes slideUp{from{transform:translateY(50px);opacity:0}to{transform:translateY(0);opacity:1}}
+.trophy{
+  width:70px; height:70px; margin:0 auto 12px;
+  background:linear-gradient(135deg, var(--accent), #ff9f43);
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 30px rgba(254,202,87,.5);
+  animation:trophySpin 1.5s ease infinite;
+}
+@keyframes trophySpin{
+  0%,100%{transform:rotate(-5deg) scale(1)}
+  50%{transform:rotate(5deg) scale(1.05)}
+}
+.trophy svg{width:40px; height:40px; color:#fff}
+.win-title{font-size:1.4rem; font-weight:800; margin-bottom:4px; color:var(--primary)}
+.win-sub{font-size:.85rem; color:var(--muted); margin-bottom:16px}
+.win-stats{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:18px}
+.win-stat{
+  background:var(--surface); border-radius:11px; padding:10px 4px;
+}
+.win-stat-val{font-size:1.1rem; font-weight:800; color:var(--accent)}
+.win-stat-lbl{font-size:.62rem; color:var(--muted); margin-top:2px}
+.new-record{
+  display:inline-flex; align-items:center; gap:4px;
+  color:#fff; background:linear-gradient(135deg, var(--accent), #ff9f43);
+  padding:6px 14px; border-radius:20px; font-size:.75rem; font-weight:800;
+  margin-bottom:14px; animation:recordPulse 1.2s infinite;
+}
+@keyframes recordPulse{
+  50%{transform:scale(1.08); box-shadow:0 0 20px rgba(254,202,87,.6)}
+}
+.win-btn{
+  width:100%; padding:13px; border:none; border-radius:12px;
+  background:linear-gradient(135deg, var(--primary), var(--primary-light));
+  color:#fff; font-family:inherit; font-weight:700; font-size:.95rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+}
+.win-btn svg{width:16px; height:16px}
+
+.confetti{
+  position:fixed; width:10px; height:10px;
+  pointer-events:none; z-index:250;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+  to{transform:translateY(110vh) rotate(720deg); opacity:0}
+}
+
+.pause-overlay{
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+  border-radius:14px; z-index:150;
+  display:none; align-items:center; justify-content:center;
+  flex-direction:column; gap:12px;
+}
+.pause-overlay.show{display:flex; animation:fadeIn .2s}
+.pause-overlay svg{width:48px; height:48px; color:#fff}
+.pause-overlay p{color:#fff; font-weight:700}
+
+@media (max-height:700px){
+  .home-logo{width:110px; height:110px; margin-bottom:16px; border-radius:28px;}
+  .home-title{font-size:2rem}
+  .home-subtitle{margin-bottom:24px}
+  .game-card{padding:16px}
+  .home-footer{margin-top:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HOME SCREEN ===== -->
+<div class="screen active" id="homeScreen">
+  <!-- لوگو با کد SVG داخلی جایگزین شد تا ۱۰۰٪ لود شود -->
+  <div class="home-logo" style="display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #6c5ce7, #a29bfe);">
+    <svg viewBox="0 0 100 100" width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="b1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#feca57"/></linearGradient>
+      </defs>
+      <g transform="translate(50 50)">
+        <path d="M -5 -35 C -22 -35, -35 -22, -35 -7 C -35 3, -30 12, -28 16 C -26 21, -28 27, -22 32 C -18 36, -10 35, -6 32 C -3 30, -1 26, -3 20 C -5 15, -1 10, -3 5 C -5 0, -3 -5, -7 -12 C -9 -17, -5 -25, -5 -30 Z" fill="url(#b1)"/>
+        <path d="M 5 -35 C 22 -35, 35 -22, 35 -7 C 35 3, 30 12, 28 16 C 26 21, 28 27, 22 32 C 18 36, 10 35, 6 32 C 3 30, 1 26, 3 20 C 5 15, 1 10, 3 5 C 5 0, 3 -5, 7 -12 C 9 -17, 5 -25, 5 -30 Z" fill="url(#b1)"/>
+        <line x1="0" y1="-32" x2="0" y2="30" stroke="#6c5ce7" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <circle cx="20" cy="25" r="3" fill="#feca57"/>
+      <circle cx="80" cy="28" r="2" fill="#feca57"/>
+      <circle cx="18" cy="75" r="2" fill="#feca57"/>
+      <circle cx="82" cy="72" r="3" fill="#feca57"/>
+    </svg>
+  </div>
+  
+  <div class="home-title">ذهن‌باز</div>
+  <div class="home-subtitle">دو بازی، یک ذهن باز</div>
+
+  <div class="game-select">
+    <div class="game-card memory" data-game="memory">
+      <div class="game-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+      </div>
+      <div class="game-info">
+        <div class="game-name">بازی حافظه</div>
+        <div class="game-desc">حافظه‌ات رو به چالش بکش</div>
+      </div>
+      <div class="game-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+    </div>
+
+    <div class="game-card dots" data-game="dots">
+      <div class="game-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="6" r="2"/>
+          <circle cx="18" cy="6" r="2"/>
+          <circle cx="6" cy="18" r="2"/>
+          <circle cx="18" cy="18" r="2"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>
+      </div>
+      <div class="game-info">
+        <div class="game-name">دوز</div>
+        <div class="game-desc">با هوش مصنوعی رقابت کن</div>
+      </div>
+      <div class="game-arrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-footer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    ذهن‌باز — نسخه ۱.۰
+  </div>
+</div>
+
+<!-- ===== MEMORY DIFFICULTY SELECT ===== -->
+<div class="screen" id="memoryDiffScreen">
+  <div class="game-header">
+    <button class="back-btn" data-back="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="game-title-header">بازی <span>حافظه</span></div>
+  </div>
+
+  <div class="diff-select">
+    <div class="diff-title">سطح سختی رو انتخاب کن</div>
+    <div class="diff-subtitle">هرچی سخت‌تر، امتیاز بیشتر!</div>
+
+    <div class="diff-card easy" data-size="4">
+      <div class="diff-emoji">🟢</div>
+      <div class="diff-info">
+        <div class="diff-name">آسان</div>
+        <div class="diff-desc">۴ جفت — برای شروع</div>
+      </div>
+    </div>
+
+    <div class="diff-card medium" data-size="6">
+      <div class="diff-emoji">🟡</div>
+      <div class="diff-info">
+        <div class="diff-name">متوسط</div>
+        <div class="diff-desc">۶ جفت — چالش واقعی</div>
+      </div>
+    </div>
+
+    <div class="diff-card hard" data-size="8">
+      <div class="diff-emoji">🔴</div>
+      <div class="diff-info">
+        <div class="diff-name">سخت</div>
+        <div class="diff-desc">۸ جفت — حالت استاد</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MEMORY GAME ===== -->
+<div class="screen" id="memoryGameScreen">
+  <div class="game-header">
+    <button class="back-btn" data-back="memoryDiff">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="game-title-header">حافظه <span id="memoryLevelLabel"></span></div>
+    <button class="back-btn" id="pauseBtn" style="margin-right:auto">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+    </button>
+  </div>
+
+  <div class="memory-layout">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-val primary" id="moves">0</div>
+        <div class="stat-lbl">حرکت</div>
+        <div class="combo-flash" id="comboFlash"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-val" id="time">0:00</div>
+        <div class="stat-lbl">زمان</div>
+      </div>
+      <div class="stat">
+        <div class="stat-val success" id="score">0</div>
+        <div class="stat-lbl">امتیاز</div>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+      <div class="combo-badge" id="comboBadge"></div>
+      <div class="pause-overlay" id="pauseOverlay">
+        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        <p>بازی متوقف شد</p>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="restartBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+        دوباره
+      </button>
+      <button class="btn btn-secondary" id="hintBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>
+        راهنما
+        <span class="hint-count" id="hintCount">3</span>
+      </button>
+      <button class="btn btn-secondary" id="soundBtn">
+        <svg id="soundIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DOTS DIFFICULTY SELECT ===== -->
+<div class="screen" id="dotsDiffScreen">
+  <div class="game-header">
+    <button class="back-btn" data-back="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="game-title-header">بازی <span>دوز</span></div>
+  </div>
+
+  <div class="diff-select">
+    <div class="diff-title">سطح هوش مصنوعی</div>
+    <div class="diff-subtitle">تو X هستی، AI با O بازی می‌کنه</div>
+
+    <div class="diff-card easy" data-diff="easy">
+      <div class="diff-emoji">🟢</div>
+      <div class="diff-info">
+        <div class="diff-name">آسان</div>
+        <div class="diff-desc">AI تصادفی — تقریباً همیشه می‌بری</div>
+      </div>
+    </div>
+
+    <div class="diff-card medium" data-diff="medium">
+      <div class="diff-emoji">🟡</div>
+      <div class="diff-info">
+        <div class="diff-name">متوسط</div>
+        <div class="diff-desc">AI نیمه‌هوشمند — باید دقت کنی</div>
+      </div>
+    </div>
+
+    <div class="diff-card hard" data-diff="hard">
+      <div class="diff-emoji">🔴</div>
+      <div class="diff-info">
+        <div class="diff-name">سخت</div>
+        <div class="diff-desc">AI شکست‌ناپذیر — حداکثر مساوی!</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DOTS GAME ===== -->
+<div class="screen" id="dotsGameScreen">
+  <div class="game-header">
+    <button class="back-btn" data-back="dotsDiff">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div class="game-title-header">دوز <span id="dotsDiffLabel"></span></div>
+    <button class="back-btn" id="dotsRestart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+    </button>
+  </div>
+
+  <div class="dots-layout">
+    <div class="dots-score">
+      <div class="score-card x active" id="xCard">
+        <div class="score-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>
+        </div>
+        <div class="score-num" id="xScore">0</div>
+        <div class="score-name">تو (X)</div>
+      </div>
+      <div class="score-card vs">
+        <div class="score-icon" style="font-weight:800; font-size:.9rem;">VS</div>
+        <div class="score-num" id="drawScore">0</div>
+        <div class="score-name">مساوی</div>
+      </div>
+      <div class="score-card o" id="oCard">
+        <div class="score-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="7"/></svg>
+        </div>
+        <div class="score-num" id="oScore">0</div>
+        <div class="score-name">AI (O)</div>
+      </div>
+    </div>
+
+    <div class="dots-board-wrap">
+      <div class="dots-board" id="dotsBoard"></div>
+    </div>
+
+    <div class="dots-status" id="dotsStatus">نوبت توئه</div>
+  </div>
+</div>
+
+<!-- ===== WIN OVERLAY (Memory) ===== -->
+<div class="win" id="winScreen">
+  <div class="win-card">
+    <div class="trophy">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+        <path d="M4 22h16"/>
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+      </svg>
+    </div>
+    <div class="win-title">آفرین! 🎉</div>
+    <div class="win-sub" id="winSub">همه جفت‌ها رو پیدا کردی</div>
+    <div class="new-record" id="newRecord" style="display:none">🏆 رکورد جدید!</div>
+    <div class="win-stats">
+      <div class="win-stat">
+        <div class="win-stat-val" id="winMoves">0</div>
+        <div class="win-stat-lbl">حرکت</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-val" id="winTime">0:00</div>
+        <div class="win-stat-lbl">زمان</div>
+      </div>
+      <div class="win-stat">
+        <div class="win-stat-val" id="winScore">0</div>
+        <div class="win-stat-lbl">امتیاز</div>
+      </div>
+    </div>
+    <button class="win-btn" id="playAgainBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+      بازی دوباره
+    </button>
+  </div>
+</div>
+
+<!-- ===== DOTS RESULT OVERLAY ===== -->
+<div class="win" id="dotsResult">
+  <div class="win-card">
+    <div class="trophy" id="dotsResultIcon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+        <path d="M4 22h16"/>
+        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+      </svg>
+    </div>
+    <div class="win-title" id="dotsResultTitle">بردی! 🎉</div>
+    <div class="win-sub" id="dotsResultSub">آفرین</div>
+    <button class="win-btn" id="dotsPlayAgain">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+      یه دست دیگه
+    </button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const ICONS = [
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="rgba(255,255,255,.3)"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M2 18h20M4 18l-2-9 5 3 5-7 5 7 5-3-2 9" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><polygon points="12 2 22 9 12 22 2 9" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M9 18V5l12-2v13" fill="none"/><circle cx="6" cy="18" r="3" fill="rgba(255,255,255,.3)"/><circle cx="18" cy="16" r="3" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="rgba(255,255,255,.3)"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" fill="rgba(255,255,255,.3)"/><line x1="16" y1="8" x2="2" y2="22"/></svg>`,
+    `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(255,255,255,.3)"/></svg>`
+  ];
+  const MATCH_SPARKLES = ['✨','⭐','💫','🌟','⚡','💥'];
+
+  const store = {
+    get(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch{ return d; } },
+    set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+  };
+
+  const settings = Object.assign({ sound: true, vibrate: true }, store.get('appSettings', {}));
+
+  let audioCtx;
+  function ensureAudio(){
+    if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function beep(freq, dur=0.1, type='sine', vol=0.15){
+    if (!settings.sound) return;
+    try {
+      ensureAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.frequency.value = freq;
+      osc.type = type;
+      const t = audioCtx.currentTime;
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.start(t); osc.stop(t + dur + 0.02);
+    } catch {}
+  }
+  const sfx = {
+    tick: () => beep(420, 0.05, 'triangle', 0.08),
+    match: (c=1) => {
+      const base = 660 + (c * 60);
+      beep(base, 0.09, 'sine', 0.15);
+      setTimeout(() => beep(base * 1.5, 0.13, 'sine', 0.15), 70);
+    },
+    combo: () => [1, 1.25, 1.5, 2].forEach((m, i) => setTimeout(() => beep(660 * m, 0.1, 'sine', 0.18), i * 60)),
+    wrong: () => beep(180, 0.16, 'sawtooth', 0.12),
+    hint: () => { beep(880, 0.06); setTimeout(() => beep(1100, 0.08), 60); },
+    win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => setTimeout(() => beep(f, 0.22, 'sine', 0.2), i * 110)),
+    click: () => beep(600, 0.04, 'square', 0.06),
+    place: () => beep(700, 0.08, 'triangle', 0.1),
+    lose: () => { beep(400, 0.15); setTimeout(() => beep(300, 0.2), 100); setTimeout(() => beep(200, 0.3), 250); }
+  };
+  function vibrate(ms=15) {
+    if (!settings.vibrate) return;
+    if (navigator.vibrate) navigator.vibrate(ms);
+  }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el) el.classList.add('active');
+  }
+
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sfx.click();
+      const target = btn.dataset.back;
+      showScreen(target === 'home' ? 'homeScreen'
+        : target === 'memoryDiff' ? 'memoryDiffScreen'
+        : target === 'dotsDiff' ? 'dotsDiffScreen'
+        : 'homeScreen');
+    });
+  });
+
+  document.querySelectorAll('.game-card').forEach(card => {
+    card.addEventListener('click', () => {
+      sfx.click(); vibrate(10);
+      const game = card.dataset.game;
+      if (game === 'memory') showScreen('memoryDiffScreen');
+      else if (game === 'dots') showScreen('dotsDiffScreen');
+    });
+  });
+
+  // ================== MEMORY GAME ==================
+  let pairCount = 4;
+  let cards = [];
+  let flipped = [];
+  let matched = 0;
+  let moves = 0;
+  let seconds = 0;
+  let score = 0;
+  let combo = 0;
+  let maxCombo = 0;
+  let hintsLeft = 3;
+  let timer = null;
+  let locked = false;
+  let paused = false;
+  let gameStarted = false;
+
+  const boardEl = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const timeEl = document.getElementById('time');
+  const scoreEl = document.getElementById('score');
+  const comboFlash = document.getElementById('comboFlash');
+  const comboBadge = document.getElementById('comboBadge');
+  const winScreen = document.getElementById('winScreen');
+  const pauseOverlay = document.getElementById('pauseOverlay');
+  const hintCount = document.getElementById('hintCount');
+  const hintBtn = document.getElementById('hintBtn');
+  const memoryLevelLabel = document.getElementById('memoryLevelLabel');
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function gridCols(n) {
+    if (n <= 4) return 2;
+    if (n <= 6) return 3;
+    if (n <= 8) return 4;
+    return 4;
+  }
+
+  function startMemoryGame(size) {
+    pairCount = size;
+    const levelName = size === 4 ? 'آسان' : size === 6 ? 'متوسط' : 'سخت';
+    memoryLevelLabel.textContent = levelName;
+
+    const icons = shuffle([...ICONS]).slice(0, pairCount);
+    cards = shuffle([...icons, ...icons]);
+
+    moves = 0; seconds = 0; score = 0; combo = 0; maxCombo = 0;
+    matched = 0; hintsLeft = 3;
+    flipped = [];
+    locked = false;
+    paused = false;
+    gameStarted = false;
+
+    movesEl.textContent = '0';
+    scoreEl.textContent = '0';
+    timeEl.textContent = '0:00';
+    hintCount.textContent = hintsLeft;
+    hintBtn.disabled = false;
+
+    clearInterval(timer);
+    timer = null;
+
+    const cols = gridCols(pairCount);
+    boardEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    boardEl.innerHTML = '';
+
+    const backIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" fill="rgba(255,255,255,.15)"/><circle cx="9" cy="9" r="1.5" fill="#fff"/><circle cx="15" cy="9" r="1.5" fill="#fff"/><circle cx="9" cy="15" r="1.5" fill="#fff"/><circle cx="15" cy="15" r="1.5" fill="#fff"/></svg>`;
+
+    cards.forEach((icon, i) => {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.index = i;
+      const pairId = cards.slice(0, i).indexOf(icon) >= 0 ? cards.slice(0, i).indexOf(icon) : i;
+      tile.dataset.pair = pairId;
+      tile.innerHTML = `
+        <div class="face face-back">${backIcon}</div>
+        <div class="face face-front">${icon}</div>
+      `;
+      tile.addEventListener('click', () => onTileClick(tile));
+      boardEl.appendChild(tile);
+    });
+
+    pauseOverlay.classList.remove('show');
+    document.getElementById('pauseBtn').classList.remove('active');
+    showScreen('memoryGameScreen');
+  }
+
+  function startTimer() {
+    if (timer) return;
+    timer = setInterval(() => {
+      if (paused) return;
+      seconds++;
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      timeEl.textContent = `${m}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+  }
+
+  function onTileClick(tile) {
+    if (locked || paused
+        || tile.classList.contains('matched')
+        || tile.classList.contains('flipped')
+        || tile.classList.contains('closing')) return;
+
+    ensureAudio();
+    if (!gameStarted) { gameStarted = true; startTimer(); }
+
+    sfx.tick(); vibrate(10);
+    tile.classList.add('flipped');
+    flipped.push(tile);
+
+    if (flipped.length === 2) {
+      moves++;
+      movesEl.textContent = moves;
+      checkMatch();
+    }
+  }
+
+  function checkMatch() {
+    const [a, b] = flipped;
+    const isMatch = a.dataset.pair === b.dataset.pair;
+
+    if (isMatch) {
+      locked = true;
+      setTimeout(() => {
+        a.classList.remove('flipped');
+        b.classList.remove('flipped');
+        a.classList.add('matched');
+        b.classList.add('matched');
+        matched++;
+        combo++;
+        maxCombo = Math.max(maxCombo, combo);
+        sfx.match(combo); vibrate(30);
+        sparkleAt(a); sparkleAt(b);
+        if (combo >= 2) { showComboBadge(combo); flashComboStat(combo); sfx.combo(); }
+        score += 100 + combo * 25;
+        scoreEl.textContent = score;
+        flipped = []; locked = false;
+        if (matched === pairCount) setTimeout(onWin, 500);
+      }, 250);
+    } else {
+      combo = 0;
+      locked = true;
+      a.classList.add('shake');
+      b.classList.add('shake');
+      sfx.wrong(); vibrate(60);
+
+      setTimeout(() => {
+        a.classList.remove('shake');
+        b.classList.remove('shake');
+        a.classList.remove('flipped');
+        b.classList.remove('flipped');
+        a.classList.add('closing');
+        b.classList.add('closing');
+
+        setTimeout(() => {
+          a.classList.remove('closing');
+          b.classList.remove('closing');
+          flipped = [];
+          locked = false;
+        }, 460);
+      }, 360);
+    }
+  }
+
+  function sparkleAt(tile) {
+    const rect = tile.getBoundingClientRect();
+    const wrapRect = boardEl.getBoundingClientRect();
+    const cx = rect.left - wrapRect.left + rect.width / 2;
+    const cy = rect.top - wrapRect.top + rect.height / 2;
+    for (let i = 0; i < 5; i++) {
+      const sp = document.createElement('div');
+      sp.className = 'sparkle';
+      sp.textContent = MATCH_SPARKLES[i % MATCH_SPARKLES.length];
+      sp.style.left = cx + 'px';
+      sp.style.top = cy + 'px';
+      const angle = (Math.PI * 2 * i) / 5 + Math.random() * 0.5;
+      const dist = 50 + Math.random() * 40;
+      sp.style.setProperty('--tx', `calc(-50% + ${Math.cos(angle) * dist}px)`);
+      sp.style.setProperty('--ty', `calc(-50% + ${Math.sin(angle) * dist}px)`);
+      sp.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+      sp.style.animationDelay = (i * 0.03) + 's';
+      boardEl.appendChild(sp);
+      setTimeout(() => sp.remove(), 1000);
+    }
+  }
+
+  function showComboBadge(n) {
+    comboBadge.textContent = `کمبو ×${n}!`;
+    comboBadge.classList.remove('show');
+    void comboBadge.offsetWidth;
+    comboBadge.classList.add('show');
+    setTimeout(() => comboBadge.classList.remove('show'), 1300);
+  }
+  function flashComboStat(n) {
+    comboFlash.textContent = `×${n}`;
+    comboFlash.style.animation = 'none';
+    void comboFlash.offsetWidth;
+    comboFlash.style.animation = 'comboFlash 1s ease';
+  }
+
+  function onWin() {
+    clearInterval(timer); timer = null;
+    sfx.win(); vibrate([50,50,50,50,100]);
+    document.getElementById('winMoves').textContent = moves;
+    document.getElementById('winTime').textContent = timeEl.textContent;
+    document.getElementById('winScore').textContent = score;
+    document.getElementById('winSub').textContent = maxCombo >= 3
+      ? `با ${maxCombo} کمبو پشت سر هم! 🔥` : 'همه جفت‌ها رو پیدا کردی';
+
+    const key = `joftBest_${pairCount}`;
+    const best = store.get(key, null);
+    if (!best || score > best.score) {
+      store.set(key, { score, moves, time: timeEl.textContent });
+      document.getElementById('newRecord').style.display = 'inline-flex';
+    } else {
+      document.getElementById('newRecord').style.display = 'none';
+    }
+    confettiBurst();
+    setTimeout(() => winScreen.classList.add('show'), 300);
+  }
+
+  function confettiBurst() {
+    const colors = ['#6c5ce7', '#a29bfe', '#feca57', '#00b894', '#ff6b6b', '#ff9f43'];
+    for (let i = 0; i < 60; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.top = '-20px';
+      c.style.background = colors[i % colors.length];
+      c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      c.style.width = (6 + Math.random() * 8) + 'px';
+      c.style.height = (6 + Math.random() * 8) + 'px';
+      c.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      c.style.animationDelay = (Math.random() * 0.5) + 's';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4000);
+    }
+  }
+
+  document.querySelectorAll('#memoryDiffScreen .diff-card').forEach(card => {
+    card.addEventListener('click', () => {
+      sfx.click(); vibrate(10);
+      startMemoryGame(parseInt(card.dataset.size));
+    });
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    sfx.click();
+    startMemoryGame(pairCount);
+  });
+  document.getElementById('playAgainBtn').addEventListener('click', () => {
+    winScreen.classList.remove('show');
+    startMemoryGame(pairCount);
+  });
+  document.getElementById('pauseBtn').addEventListener('click', () => {
+    if (!gameStarted || matched === pairCount) return;
+    paused = !paused;
+    pauseOverlay.classList.toggle('show', paused);
+    document.getElementById('pauseBtn').classList.toggle('active', paused);
+    sfx.click();
+  });
+
+  hintBtn.addEventListener('click', () => {
+    if (hintsLeft <= 0 || matched === pairCount) return;
+    hintsLeft--; hintCount.textContent = hintsLeft;
+    if (hintsLeft <= 0) hintBtn.disabled = true;
+    sfx.hint(); vibrate(15);
+    const tiles = [...boardEl.children].filter(t =>
+      !t.classList.contains('matched') && !t.classList.contains('flipped') && !t.classList.contains('closing'));
+    const groups = {};
+    tiles.forEach(t => (groups[t.dataset.pair] = groups[t.dataset.pair] || []).push(t));
+    const pairs = Object.values(groups).filter(g => g.length === 2);
+    if (!pairs.length) return;
+    const pick = pairs[Math.floor(Math.random() * pairs.length)];
+    pick.forEach(t => {
+      t.classList.add('hint');
+      setTimeout(() => t.classList.remove('hint'), 2400);
+    });
+  });
+
+  document.getElementById('soundBtn').addEventListener('click', () => {
+    settings.sound = !settings.sound;
+    store.set('appSettings', settings);
+    syncSoundIcon();
+    if (settings.sound) sfx.click();
+  });
+
+  function syncSoundIcon() {
+    document.getElementById('soundIcon').innerHTML = settings.sound
+      ? `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>`
+      : `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>`;
+  }
+
+  // ==================== DOTS GAME ====================
+  const X_MARK = `<svg viewBox="0 0 24 24" class="x-mark" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`;
+  const O_MARK = `<svg viewBox="0 0 24 24" class="o-mark" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="7"/></svg>`;
+  const WIN_LINES = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  let dotsBoard = ['','','','','','','','',''];
+  let dotsDiff = 'easy';
+  let playerTurn = true;
+  let dotsGameOver = false;
+  let xScore = 0, oScore = 0, drawCount = 0;
+
+  const dotsBoardEl = document.getElementById('dotsBoard');
+  const dotsStatus = document.getElementById('dotsStatus');
+  const dotsDiffLabel = document.getElementById('dotsDiffLabel');
+
+  function startDotsGame(diff) {
+    dotsDiff = diff;
+    const diffName = diff === 'easy' ? 'آسان' : diff === 'medium' ? 'متوسط' : 'سخت';
+    dotsDiffLabel.textContent = diffName;
+
+    dotsBoard = ['','','','','','','','',''];
+    playerTurn = true;
+    dotsGameOver = false;
+
+    renderDotsBoard();
+    updateDotsStatus('نوبت توئه', '');
+    updateTurnHighlight();
+    showScreen('dotsGameScreen');
+  }
+
+  function renderDotsBoard() {
+    dotsBoardEl.innerHTML = '';
+    dotsBoard.forEach((val, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'dots-cell' + (val ? ' filled' : '');
+      cell.dataset.index = i;
+      if (val === 'X') cell.innerHTML = X_MARK;
+      else if (val === 'O') cell.innerHTML = O_MARK;
+      if (!val && !dotsGameOver) {
+        cell.addEventListener('click', () => onDotsClick(i));
+      }
+      dotsBoardEl.appendChild(cell);
+    });
+  }
+
+  function onDotsClick(i) {
+    if (!playerTurn || dotsGameOver || dotsBoard[i]) return;
+    ensureAudio();
+    sfx.place(); vibrate(10);
+    dotsBoard[i] = 'X';
+    renderDotsBoard();
+
+    if (checkDotsResult()) return;
+    playerTurn = false;
+    updateTurnHighlight();
+    updateDotsStatus('AI داره فکر می‌کنه', 'thinking');
+
+    setTimeout(() => aiMove(), dotsDiff === 'easy' ? 400 : dotsDiff === 'medium' ? 600 : 800);
+  }
+
+  function aiMove() {
+    if (dotsGameOver) return;
+    let idx;
+    if (dotsDiff === 'easy') {
+      idx = randomMove();
+    } else if (dotsDiff === 'medium') {
+      idx = Math.random() < 0.6 ? bestMove() : randomMove();
+    } else {
+      idx = bestMove();
+    }
+    if (idx == null) return;
+    dotsBoard[idx] = 'O';
+    renderDotsBoard();
+    sfx.place(); vibrate(10);
+    if (checkDotsResult()) return;
+    playerTurn = true;
+    updateTurnHighlight();
+    updateDotsStatus('نوبت توئه', '');
+  }
+
+  function randomMove() {
+    const empty = dotsBoard.map((v, i) => v ? null : i).filter(v => v !== null);
+    if (!empty.length) return null;
+    return empty[Math.floor(Math.random() * empty.length)];
+  }
+
+  function bestMove() {
+    let move = findWinningMove('O');
+    if (move !== null) return move;
+    move = findWinningMove('X');
+    if (move !== null) return move;
+    if (!dotsBoard[4]) return 4;
+    const opposite = {0:8, 2:6, 6:2, 8:0};
+    for (const c of [0,2,6,8]) {
+      if (dotsBoard[c] === 'O' && !dotsBoard[opposite[c]]) return opposite[c];
+    }
+    for (const c of [0,2,6,8]) if (!dotsBoard[c]) return c;
+    for (const s of [1,3,5,7]) if (!dotsBoard[s]) return s;
+    return randomMove();
+  }
+
+  function findWinningMove(player) {
+    for (const line of WIN_LINES) {
+      const vals = line.map(i => dotsBoard[i]);
+      const pCount = vals.filter(v => v === player).length;
+      const empty = vals.filter(v => v === '').length;
+      if (pCount === 2 && empty === 1) {
+        return line[vals.indexOf('')];
+      }
+    }
+    return null;
+  }
+
+  function checkDotsResult() {
+    for (const line of WIN_LINES) {
+      const [a,b,c] = line;
+      if (dotsBoard[a] && dotsBoard[a] === dotsBoard[b] && dotsBoard[a] === dotsBoard[c]) {
+        dotsGameOver = true;
+        line.forEach(i => dotsBoardEl.children[i]?.classList.add('win-line'));
+        if (dotsBoard[a] === 'X') {
+          xScore++; sfx.win(); vibrate([50,50,50,50,100]);
+          updateDotsStatus('بردی! 🎉', 'win');
+          updateDotsScores();
+          showDotsResult('win');
+        } else {
+          oScore++; sfx.lose(); vibrate([80,40,80]);
+          updateDotsStatus('AI برد! 🤖', 'lose');
+          updateDotsScores();
+          showDotsResult('lose');
+        }
+        return true;
+      }
+    }
+    if (!dotsBoard.includes('')) {
+      dotsGameOver = true;
+      drawCount++;
+      updateDotsStatus('مساوی شد 🤝', 'draw');
+      updateDotsScores();
+      sfx.win();
+      showDotsResult('draw');
+      return true;
+    }
+    return false;
+  }
+
+  function updateDotsStatus(text, cls) {
+    dotsStatus.textContent = text;
+    dotsStatus.className = 'dots-status' + (cls ? ' ' + cls : '');
+    if (cls === 'thinking') dotsStatus.classList.add('thinking-dots');
+  }
+
+  function updateTurnHighlight() {
+    document.getElementById('xCard').classList.toggle('active', playerTurn && !dotsGameOver);
+    document.getElementById('oCard').classList.toggle('active', !playerTurn && !dotsGameOver);
+  }
+
+  function updateDotsScores() {
+    document.getElementById('xScore').textContent = xScore;
+    document.getElementById('oScore').textContent = oScore;
+    document.getElementById('drawScore').textContent = drawCount;
+    document.getElementById('xCard').classList.remove('active');
+    document.getElementById('oCard').classList.remove('active');
+  }
+
+  function showDotsResult(result) {
+    const overlay = document.getElementById('dotsResult');
+    const title = document.getElementById('dotsResultTitle');
+    const sub = document.getElementById('dotsResultSub');
+    const icon = document.getElementById('dotsResultIcon');
+
+    if (result === 'win') {
+      title.textContent = 'بردی! 🎉';
+      sub.textContent = 'آفرین، خوب بازی کردی';
+      icon.style.background = 'linear-gradient(135deg, #00b894, #55efc4)';
+    } else if (result === 'lose') {
+      title.textContent = 'AI برد 🤖';
+      sub.textContent = 'یه بار دیگه امتحان کن';
+      icon.style.background = 'linear-gradient(135deg, #ff6b6b, #ee5a6f)';
+    } else {
+      title.textContent = 'مساوی 🤝';
+      sub.textContent = 'بازی نزدیک بود';
+      icon.style.background = 'linear-gradient(135deg, #feca57, #ff9f43)';
+    }
+
+    if (result !== 'draw') confettiBurst();
+    setTimeout(() => overlay.classList.add('show'), 600);
+  }
+
+  document.querySelectorAll('#dotsDiffScreen .diff-card').forEach(card => {
+    card.addEventListener('click', () => {
+      sfx.click(); vibrate(10);
+      startDotsGame(card.dataset.diff);
+    });
+  });
+
+  document.getElementById('dotsRestart').addEventListener('click', () => {
+    sfx.click();
+    document.getElementById('dotsResult').classList.remove('show');
+    startDotsGame(dotsDiff);
+  });
+
+  document.getElementById('dotsPlayAgain').addEventListener('click', () => {
+    document.getElementById('dotsResult').classList.remove('show');
+    startDotsGame(dotsDiff);
+  });
+
+  syncSoundIcon();
+  showScreen('homeScreen');
+})();
+</script>
+</body>
+</html>
